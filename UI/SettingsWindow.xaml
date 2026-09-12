@@ -78,8 +78,8 @@
 
                 <TextBlock Text="Theme Mode" FontSize="12" Foreground="#AAAAAA" Margin="0,0,0,4"/>
                 <ComboBox x:Name="CmbTheme" SelectionChanged="OnSettingChanged" Margin="0,0,0,8">
-                    <ComboBoxItem Content="Frosted Glass (Default)" Tag="FrostedGlass"/>
-                    <ComboBoxItem Content="Dark Glass" Tag="DarkGlass"/>
+                    <ComboBoxItem Content="TaskbarDock Dark Glass (Default)" Tag="DarkGlass"/>
+                    <ComboBoxItem Content="Frosted Light Glass" Tag="FrostedGlass"/>
                     <ComboBoxItem Content="Light Glass" Tag="LightGlass"/>
                     <ComboBoxItem Content="OLED Black" Tag="OLEDBlack"/>
                 </ComboBox>

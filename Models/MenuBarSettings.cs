@@ -8,9 +8,9 @@ namespace MenubarDock.Models
         public bool StartWithWindows { get; set; } = false;
         public string GlobalShortcut { get; set; } = "Ctrl+Alt+M";
         public double BarHeight { get; set; } = 30.0;
-        public double Opacity { get; set; } = 0.92;
-        // Themes: "FrostedGlass", "DarkGlass", "LightGlass", "OLEDBlack"
-        public string Theme { get; set; } = "FrostedGlass";
+        public double Opacity { get; set; } = 0.88;
+        // Themes: "DarkGlass" (Default / Same as TaskbarDock), "FrostedGlass", "LightGlass", "OLEDBlack"
+        public string Theme { get; set; } = "DarkGlass";
         public bool AutoHideWhenAppsOpen { get; set; } = true;
         public bool ShowAppleMenu { get; set; } = true;
         public bool ShowActiveApp { get; set; } = true;

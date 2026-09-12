@@ -17,7 +17,7 @@
     <Window.Resources>
         <Style x:Key="MenuBtnStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#1A1A20"/>
+            <Setter Property="Foreground" Value="#EEEEEE"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Padding" Value="7,0"/>
@@ -32,7 +32,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#25000000"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#30FFFFFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -95,12 +95,18 @@
             <TranslateTransform x:Name="MenuBarSlideTransform" Y="0"/>
         </Grid.RenderTransform>
 
-        <!-- Menu Bar Container -->
+        <!-- Menu Bar Container with TaskbarDock Glass Styling -->
         <Border x:Name="MenuBarContainer"
-                BorderBrush="#30000000"
+                BorderBrush="#35FFFFFF"
                 BorderThickness="0,0,0,1">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#CC222226" Offset="0.0"/>
+                    <GradientStop Color="#EE161618" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.Background>
             <Border.Effect>
-                <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Opacity="0.2" Color="#000000"/>
+                <DropShadowEffect BlurRadius="15" ShadowDepth="4" Direction="270" Opacity="0.35" Color="#000000"/>
             </Border.Effect>
 
             <Grid>
@@ -115,8 +121,8 @@
 
                     <!-- Apple System Menu -->
                     <Button x:Name="BtnApple" Style="{StaticResource MenuBtnStyle}" Click="OnOpenMenuClick" ToolTip="System Menu">
-                        <Path x:Name="PathApple" Data="M18.71,19.5c-0.83,1.24-1.71,2.45-3.05,2.47c-1.34,0.03-1.77-0.79-3.29-0.79c-1.53,0-2,0.77-3.27,0.82c-1.31,0.05-2.3-1.32-3.14-2.53C4.25,17 2.94,12.45 4.7,9.39c0.87-1.52 2.43-2.48 4.12-2.51c1.28-0.02 2.5,0.87 3.29,0.87c0.78,0 2.26-1.07 3.81-0.91c0.65,0.03 2.47,0.26 3.64,1.98c-0.09,0.06-2.17,1.28-2.15,3.81c0.03,3.02 2.65,4.03 2.68,4.04c-0.03,0.07-0.42,1.44-1.38,2.83M15.97,6.88c0.66-0.8 1.11-1.92 0.99-3.04c-0.96,0.04-2.11,0.64-2.8,1.44c-0.6,0.69-1.13,1.83-0.99,2.92c1.07,0.08 2.16-0.55 2.8-1.32z"
-                              Fill="#1A1A20" Width="13" Height="15" Stretch="Uniform"/>
+                        <Path x:Name="PathApple" Data="M18.71,19.5c-0.83,1.24-1.71,2.45-3.05,2.47c-1.34,0.03-1.77-0.79-3.29-0.79c-1.53,0-2,0.77-3.27,0.82c-1.31,0.05-2.3-1.32-3.14-2.53C4.25,17 2.94,12.45 4.7,9.39c0.87-1.52 2.43-2.48 4.12-2.51c1.28,-0.02 2.5,0.87 3.29,0.87c0.78,0 2.26-1.07 3.81-0.91c0.65,0.03 2.47,0.26 3.64,1.98c-0.09,0.06-2.17,1.28-2.15,3.81c0.03,3.02 2.65,4.03 2.68,4.04c-0.03,0.07-0.42,1.44-1.38,2.83M15.97,6.88c0.66-0.8 1.11-1.92 0.99-3.04c-0.96,0.04-2.11,0.64-2.8,1.44c-0.6,0.69-1.13,1.83-0.99,2.92c1.07,0.08 2.16,-0.55 2.8,-1.32z"
+                              Fill="#FFFFFF" Width="13" Height="15" Stretch="Uniform"/>
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="About This PC" Click="OnAboutThisPcClick"/>
@@ -135,11 +141,11 @@
 
                     <!-- Active App Name -->
                     <TextBlock x:Name="TxtActiveApp" Text="Finder" FontWeight="Bold"
-                               FontSize="13" Foreground="#1A1A20" VerticalAlignment="Center"
+                               FontSize="13" Foreground="#FFFFFF" VerticalAlignment="Center"
                                Margin="6,0,8,0"/>
 
                     <!-- File -->
-                    <Button Style="{StaticResource MenuBtnStyle}" Content="File" Click="OnOpenMenuClick">
+                    <Button x:Name="BtnFile" Style="{StaticResource MenuBtnStyle}" Content="File" Click="OnOpenMenuClick">
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="New File Explorer Window" Click="OnNewExplorerClick"/>
@@ -152,7 +158,7 @@
                     </Button>
 
                     <!-- Edit -->
-                    <Button Style="{StaticResource MenuBtnStyle}" Content="Edit" Click="OnOpenMenuClick">
+                    <Button x:Name="BtnEdit" Style="{StaticResource MenuBtnStyle}" Content="Edit" Click="OnOpenMenuClick">
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Undo  (Ctrl+Z)" Click="OnUndoClick"/>
@@ -169,7 +175,7 @@
                     </Button>
 
                     <!-- View -->
-                    <Button Style="{StaticResource MenuBtnStyle}" Content="View" Click="OnOpenMenuClick">
+                    <Button x:Name="BtnView" Style="{StaticResource MenuBtnStyle}" Content="View" Click="OnOpenMenuClick">
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Toggle Full Screen  (F11)" Click="OnFullscreenClick"/>
@@ -184,7 +190,7 @@
                     </Button>
 
                     <!-- Window -->
-                    <Button Style="{StaticResource MenuBtnStyle}" Content="Window" Click="OnOpenMenuClick">
+                    <Button x:Name="BtnWindow" Style="{StaticResource MenuBtnStyle}" Content="Window" Click="OnOpenMenuClick">
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Minimize  (Win+Down)" Click="OnMinimizeClick"/>
@@ -198,7 +204,7 @@
                     </Button>
 
                     <!-- Help -->
-                    <Button Style="{StaticResource MenuBtnStyle}" Content="Help" Click="OnOpenMenuClick">
+                    <Button x:Name="BtnHelp" Style="{StaticResource MenuBtnStyle}" Content="Help" Click="OnOpenMenuClick">
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="MenubarDock Settings..." Click="OnMenuBarSettingsClick"/>
@@ -208,28 +214,28 @@
                     </Button>
                 </StackPanel>
 
-                <!-- RIGHT: Status Widgets -->
+                <!-- RIGHT: Status Widgets with TaskbarDock White Glyph Styling -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,10,0" VerticalAlignment="Center">
 
                     <!-- Battery Widget -->
                     <Button x:Name="BtnBattery" Style="{StaticResource MenuBtnStyle}" Click="OnOpenMenuClick" ToolTip="Battery and Power">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <Grid Width="22" Height="12" Margin="0,0,3,0" VerticalAlignment="Center">
-                                <Border BorderBrush="#1A1A20" BorderThickness="1.2" CornerRadius="2"
+                                <Border x:Name="BorderBatteryOutline" BorderBrush="#FFFFFF" BorderThickness="1.2" CornerRadius="2"
                                         Width="19" Height="11" HorizontalAlignment="Left">
-                                    <Rectangle x:Name="RectBatteryLevel" Fill="#00C853"
+                                    <Rectangle x:Name="RectBatteryLevel" Fill="#00D26A"
                                                HorizontalAlignment="Left" Width="14" Height="7" Margin="1"/>
                                 </Border>
-                                <Rectangle Fill="#1A1A20" Width="2" Height="4"
+                                <Rectangle x:Name="RectBatteryNub" Fill="#FFFFFF" Width="2" Height="4"
                                            HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,1,0"/>
                                 <Path x:Name="PathChargingBolt"
                                       Data="M4,0 L0,5 L3,5 L2,9 L7,3 L4,3 Z"
-                                      Fill="#F9A825" Width="7" Height="9" Stretch="Uniform"
+                                      Fill="#FFE600" Width="7" Height="9" Stretch="Uniform"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"
                                       Visibility="Collapsed"/>
                             </Grid>
                             <TextBlock x:Name="TxtBatteryPercent" Text="100%" FontSize="12"
-                                       Foreground="#1A1A20" VerticalAlignment="Center"/>
+                                       Foreground="#FFFFFF" VerticalAlignment="Center"/>
                         </StackPanel>
                         <Button.ContextMenu>
                             <ContextMenu>
@@ -243,7 +249,7 @@
                     <Button x:Name="BtnWifi" Style="{StaticResource MenuBtnStyle}" Click="OnOpenMenuClick" ToolTip="Wi-Fi and Network">
                         <Path x:Name="PathWifi"
                               Data="M12,4C7.31,4 3.07,5.9 0,8.98L12,21L24,8.98C20.93,5.9 16.69,4 12,4M12,6C16.14,6 19.89,7.66 22.65,10.37L12,21L1.35,10.37C4.11,7.66 7.86,6 12,6Z"
-                              Fill="#1A1A20" Width="15" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                              Fill="#FFFFFF" Width="15" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Wi-Fi Settings..." Click="OnWifiSettingsClick"/>
@@ -258,7 +264,7 @@
                     <Button x:Name="BtnBluetooth" Style="{StaticResource MenuBtnStyle}" Click="OnOpenMenuClick" ToolTip="Bluetooth">
                         <Path x:Name="PathBluetooth"
                               Data="M14.88,16.29L13,18.17V14.41M13,5.83L14.88,7.71L13,9.59M17.71,7.71L12,2H11V9.58L6.41,5L5,6.41L10.59,12L5,17.58L6.41,19L11,14.41V22H12L17.71,16.29L13.41,12L17.71,7.71Z"
-                              Fill="#1A1A20" Width="13" Height="15" Stretch="Uniform" VerticalAlignment="Center"/>
+                              Fill="#FFFFFF" Width="13" Height="15" Stretch="Uniform" VerticalAlignment="Center"/>
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Bluetooth Settings..." Click="OnBluetoothSettingsClick"/>
@@ -271,7 +277,7 @@
                     <Button x:Name="BtnVolume" Style="{StaticResource MenuBtnStyle}" Click="OnOpenMenuClick" ToolTip="Sound and Volume">
                         <Path x:Name="PathVolume"
                               Data="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z"
-                              Fill="#1A1A20" Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center"/>
+                              Fill="#FFFFFF" Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center"/>
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Sound Settings..." Click="OnSoundSettingsClick"/>
@@ -286,7 +292,7 @@
                     <Button x:Name="BtnFocus" Style="{StaticResource MenuBtnStyle}" Click="OnOpenMenuClick" ToolTip="Focus / Do Not Disturb">
                         <Path x:Name="PathFocus"
                               Data="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4V20Z"
-                              Fill="#1A1A20" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                              Fill="#FFFFFF" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Focus and Do Not Disturb Settings..." Click="OnFocusSettingsClick"/>
@@ -299,20 +305,20 @@
                     <Button x:Name="BtnSearch" Style="{StaticResource MenuBtnStyle}" Click="OnSearchClick" ToolTip="Windows Search (Win+S)">
                         <Path x:Name="PathSearch"
                               Data="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"
-                              Fill="#1A1A20" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                              Fill="#FFFFFF" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
                     </Button>
 
                     <!-- Control Center -->
                     <Button x:Name="BtnControlCenter" Style="{StaticResource MenuBtnStyle}" Click="OnQuickSettingsClick" ToolTip="Control Center (Win+A)">
                         <Path x:Name="PathControlCenter"
                               Data="M4,6H16V8H4V6M4,16H16V18H4V16M18,6H20V8H18V6M18,16H20V18H18V16M8,11H20V13H8V11M4,11H6V13H4V11Z"
-                              Fill="#1A1A20" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                              Fill="#FFFFFF" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
                     </Button>
 
                     <!-- Clock and Date -->
                     <Button x:Name="BtnClock" Style="{StaticResource MenuBtnStyle}" Click="OnClockClick" ToolTip="Notification Center (Win+N)">
                         <TextBlock x:Name="TxtClock" Text="Fri Sep 4  4:30 PM" FontSize="12.5"
-                                   FontWeight="SemiBold" Foreground="#1A1A20" VerticalAlignment="Center"/>
+                                   FontWeight="SemiBold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
                     </Button>
 
                 </StackPanel>

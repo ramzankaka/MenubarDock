@@ -11,6 +11,8 @@ using MenubarDock.Services;
 using static MenubarDock.Core.NativeMethods;
 using Button = System.Windows.Controls.Button;
 using Color = System.Windows.Media.Color;
+using Brush = System.Windows.Media.Brush;
+using Point = System.Windows.Point;
 
 namespace MenubarDock.UI
 {
@@ -69,49 +71,69 @@ namespace MenubarDock.UI
 
         public void ApplyThemeStyles()
         {
-            string theme = _config.Settings.Theme ?? "FrostedGlass";
+            string theme = _config.Settings.Theme ?? "DarkGlass";
             double opacity = _config.Settings.Opacity;
 
-            Color bg;
+            Brush bgBrush;
             Color fg;
             Color iconColor;
+            Brush borderBrush;
 
             switch (theme)
             {
                 case "FrostedGlass":
-                    bg = Color.FromArgb((byte)(opacity * 255), 225, 228, 238);
+                    bgBrush = new SolidColorBrush(Color.FromArgb((byte)(opacity * 255), 235, 238, 245));
                     fg = Color.FromRgb(20, 20, 28);
                     iconColor = fg;
-                    break;
-                case "DarkGlass":
-                    bg = Color.FromArgb((byte)(opacity * 255), 28, 28, 32);
-                    fg = Color.FromRgb(240, 240, 245);
-                    iconColor = fg;
+                    borderBrush = new SolidColorBrush(Color.FromArgb(50, 0, 0, 0));
                     break;
                 case "LightGlass":
-                    bg = Color.FromArgb((byte)(opacity * 255), 248, 248, 252);
+                    bgBrush = new SolidColorBrush(Color.FromArgb((byte)(opacity * 255), 248, 248, 252));
                     fg = Color.FromRgb(30, 30, 38);
                     iconColor = fg;
+                    borderBrush = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0));
                     break;
                 case "OLEDBlack":
-                    bg = Color.FromArgb((byte)(opacity * 255), 8, 8, 10);
+                    bgBrush = new SolidColorBrush(Color.FromArgb((byte)(opacity * 255), 8, 8, 10));
                     fg = Color.FromRgb(255, 255, 255);
                     iconColor = fg;
+                    borderBrush = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255));
                     break;
+                case "DarkGlass":
                 default:
-                    bg = Color.FromArgb((byte)(opacity * 255), 225, 228, 238);
-                    fg = Color.FromRgb(20, 20, 28);
-                    iconColor = fg;
+                    // Exact TaskbarDock Glass Theme
+                    var grad = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+                    grad.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(opacity * 255), 34, 34, 38), 0.0));
+                    grad.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(opacity * 255), 22, 22, 24), 1.0));
+                    bgBrush = grad;
+
+                    var borderGrad = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+                    borderGrad.GradientStops.Add(new GradientStop(Color.FromArgb(80, 255, 255, 255), 0.0));
+                    borderGrad.GradientStops.Add(new GradientStop(Color.FromArgb(35, 255, 255, 255), 1.0));
+                    borderBrush = borderGrad;
+
+                    fg = Color.FromRgb(240, 240, 245);
+                    iconColor = Color.FromRgb(255, 255, 255);
                     break;
             }
 
-            MenuBarContainer.Background = new SolidColorBrush(bg);
+            MenuBarContainer.Background = bgBrush;
+            MenuBarContainer.BorderBrush = borderBrush;
 
             var fgBrush = new SolidColorBrush(fg);
             TxtActiveApp.Foreground = fgBrush;
             TxtClock.Foreground = fgBrush;
             TxtBatteryPercent.Foreground = fgBrush;
 
+            // Update Left Menu buttons foreground
+            BtnApple.Foreground = fgBrush;
+            BtnFile.Foreground = fgBrush;
+            BtnEdit.Foreground = fgBrush;
+            BtnView.Foreground = fgBrush;
+            BtnWindow.Foreground = fgBrush;
+            BtnHelp.Foreground = fgBrush;
+
+            // Icons
             var iconBrush = new SolidColorBrush(iconColor);
             PathApple.Fill = iconBrush;
             PathWifi.Fill = iconBrush;
@@ -121,7 +143,8 @@ namespace MenubarDock.UI
             PathSearch.Fill = iconBrush;
             PathControlCenter.Fill = iconBrush;
 
-            // Update battery border color
+            BorderBatteryOutline.BorderBrush = iconBrush;
+            RectBatteryNub.Fill = iconBrush;
             RectBatteryLevel.Fill = new SolidColorBrush(Color.FromRgb(50, 215, 75));
 
             // Widget visibility from settings
