@@ -35,6 +35,6 @@
 
 ## Installation
 
-1. Download `MenubarDock-v1.0.0-win-x64.zip` from Releases.
+1. Download `MenubarDock-v1.1.0-win-x64.zip` from Releases.
 2. Extract the ZIP file.
 3. Right-click `Install-MenubarDock.ps1` → **Run with PowerShell** (or run `MenubarDock.exe` directly).
