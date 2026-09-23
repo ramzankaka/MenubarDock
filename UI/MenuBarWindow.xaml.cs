@@ -2,10 +2,12 @@ using System;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using MenubarDock.Core;
 using MenubarDock.Services;
 using static MenubarDock.Core.NativeMethods;
@@ -28,6 +30,8 @@ namespace MenubarDock.UI
 
         private bool _isCurrentlySlidUp;
         private bool _isMenuOpen;
+        private int _leaveTicks = 0;
+        private double _dpiScale = 1.0;
         private IntPtr _hwnd = IntPtr.Zero;
 
         public MenuBarWindow(ConfigurationManager config, BatteryService batteryService,
@@ -51,11 +55,30 @@ namespace MenubarDock.UI
             _autoHideTimer.Start();
 
             _batteryService.PropertyChanged += (s, e) => Dispatcher.Invoke(UpdateBatteryUI);
-            _appTracker.PropertyChanged += (s, e) =>
-                Dispatcher.Invoke(() => TxtActiveApp.Text = _appTracker.ActiveAppName);
+            _networkService.PropertyChanged += (s, e) => Dispatcher.Invoke(UpdateNetworkUI);
+            _appTracker.PropertyChanged += (s, e) => Dispatcher.Invoke(() =>
+            {
+                TxtActiveApp.Text = _appTracker.ActiveAppName;
+                UpdateActiveAppMenu(_appTracker.ActiveAppName);
+            });
+
+            DpiChanged += (s, ev) =>
+            {
+                _dpiScale = ev.NewDpi.DpiScaleY;
+                RepositionMenuBar();
+            };
+
+            SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
 
             ApplyThemeStyles();
             UpdateBatteryUI();
+            UpdateNetworkUI();
+            UpdateActiveAppMenu(_appTracker.ActiveAppName);
+        }
+
+        private void OnDisplaySettingsChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.Invoke(RepositionMenuBar);
         }
 
         private void OnWindowLoaded(object sender, RoutedEventArgs e)
@@ -65,6 +88,12 @@ namespace MenubarDock.UI
 
             int exStyle = GetWindowLong(_hwnd, GWL_EXSTYLE);
             SetWindowLong(_hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+
+            var source = PresentationSource.FromVisual(this);
+            if (source?.CompositionTarget != null)
+            {
+                _dpiScale = source.CompositionTarget.TransformToDevice.M22;
+            }
 
             RepositionMenuBar();
         }
@@ -101,7 +130,6 @@ namespace MenubarDock.UI
                     break;
                 case "DarkGlass":
                 default:
-                    // Exact TaskbarDock Glass Theme
                     var grad = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
                     grad.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(opacity * 255), 34, 34, 38), 0.0));
                     grad.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(opacity * 255), 22, 22, 24), 1.0));
@@ -127,6 +155,7 @@ namespace MenubarDock.UI
 
             // Update Left Menu buttons foreground
             BtnApple.Foreground = fgBrush;
+            BtnActiveApp.Foreground = fgBrush;
             BtnFile.Foreground = fgBrush;
             BtnEdit.Foreground = fgBrush;
             BtnView.Foreground = fgBrush;
@@ -147,6 +176,10 @@ namespace MenubarDock.UI
             RectBatteryNub.Fill = iconBrush;
             RectBatteryLevel.Fill = new SolidColorBrush(Color.FromRgb(50, 215, 75));
 
+            // Left side visibility
+            BtnApple.Visibility = _config.Settings.ShowAppleMenu ? Visibility.Visible : Visibility.Collapsed;
+            BtnActiveApp.Visibility = _config.Settings.ShowActiveApp ? Visibility.Visible : Visibility.Collapsed;
+
             // Widget visibility from settings
             BtnFocus.Visibility = _config.Settings.ShowFocusWidget ? Visibility.Visible : Visibility.Collapsed;
             BtnBluetooth.Visibility = _config.Settings.ShowBluetoothWidget ? Visibility.Visible : Visibility.Collapsed;
@@ -154,7 +187,10 @@ namespace MenubarDock.UI
             BtnVolume.Visibility = _config.Settings.ShowVolumeWidget ? Visibility.Visible : Visibility.Collapsed;
             BtnSearch.Visibility = _config.Settings.ShowSearchWidget ? Visibility.Visible : Visibility.Collapsed;
             BtnControlCenter.Visibility = _config.Settings.ShowControlCenterWidget ? Visibility.Visible : Visibility.Collapsed;
+            BtnClock.Visibility = _config.Settings.ShowClockWidget ? Visibility.Visible : Visibility.Collapsed;
 
+            UpdateNetworkUI();
+            UpdateBatteryUI();
             RepositionMenuBar();
         }
 
@@ -169,30 +205,89 @@ namespace MenubarDock.UI
 
         private void CheckTopEdgeProximity()
         {
-            if (!_config.Settings.AutoHideWhenAppsOpen || !IsVisible || _isMenuOpen) return;
-            if (!GetCursorPos(out POINT pt)) return;
+            if (!IsVisible) return;
 
-            bool isDesktopActive = _appTracker.ActiveAppName.Equals("Finder",
-                StringComparison.OrdinalIgnoreCase);
-
-            if (isDesktopActive)
+            // If auto-hide is disabled in settings, ensure bar is always fully visible
+            if (!_config.Settings.AutoHideWhenAppsOpen)
             {
-                if (_isCurrentlySlidUp) { _isCurrentlySlidUp = false; SlideBar(0); }
+                if (_isCurrentlySlidUp)
+                {
+                    _isCurrentlySlidUp = false;
+                    _leaveTicks = 0;
+                    SlideBar(0);
+                }
                 return;
             }
 
-            bool atTopEdge = pt.Y <= 2;
-            bool overBar = pt.Y <= (Height + 4);
-
-            if (atTopEdge && _isCurrentlySlidUp)
+            // If a dropdown context menu is currently open, keep bar visible
+            if (_isMenuOpen)
             {
-                _isCurrentlySlidUp = false;
-                SlideBar(0);
+                _leaveTicks = 0;
+                if (_isCurrentlySlidUp)
+                {
+                    _isCurrentlySlidUp = false;
+                    SlideBar(0);
+                }
+                return;
             }
-            else if (!overBar && !_isCurrentlySlidUp)
+
+            if (!GetCursorPos(out POINT pt)) return;
+
+            // Check if any application or program window is open and restored on screen
+            bool hasOpenWindows = WindowDetectionService.HasOpenApplicationWindows();
+            bool isDesktopActive = _appTracker.IsDesktop;
+
+            // When no programs are open (clean desktop or all windows minimized) or desktop is focused,
+            // the menu bar stays fully visible.
+            if (!hasOpenWindows || isDesktopActive)
             {
-                _isCurrentlySlidUp = true;
-                SlideBar(-(Height + 2));
+                _leaveTicks = 0;
+                if (_isCurrentlySlidUp)
+                {
+                    _isCurrentlySlidUp = false;
+                    SlideBar(0);
+                }
+                return;
+            }
+
+            // An application window is open and active. Auto-hide applies unless pointer touches top edge.
+            double physicalBarHeight = Height * _dpiScale;
+            double physicalScreenWidth = SystemParameters.PrimaryScreenWidth * _dpiScale;
+
+            bool withinHorizontalBounds = pt.X >= 0 && pt.X <= physicalScreenWidth;
+            bool atTopEdge = withinHorizontalBounds && pt.Y >= 0 && pt.Y <= 2;
+            bool overBar = !_isCurrentlySlidUp && withinHorizontalBounds && pt.Y >= 0 && pt.Y <= (physicalBarHeight + 6 * _dpiScale);
+
+            if (atTopEdge)
+            {
+                _leaveTicks = 0;
+                if (_isCurrentlySlidUp)
+                {
+                    _isCurrentlySlidUp = false;
+                    SlideBar(0);
+                }
+            }
+            else if (overBar)
+            {
+                _leaveTicks = 0;
+                // Pointer is hovering or interacting with the menu bar: stay visible
+            }
+            else
+            {
+                // Pointer is outside the menu bar: debounce before sliding up
+                if (!_isCurrentlySlidUp)
+                {
+                    _leaveTicks++;
+                    if (_leaveTicks >= 6) // ~210ms debounce to prevent accidental dismissals
+                    {
+                        _isCurrentlySlidUp = true;
+                        SlideBar(-(Height + 4));
+                    }
+                }
+                else
+                {
+                    _leaveTicks = 0;
+                }
             }
         }
 
@@ -200,9 +295,9 @@ namespace MenubarDock.UI
         {
             Dispatcher.Invoke(() =>
             {
-                var anim = new DoubleAnimation(targetY, TimeSpan.FromMilliseconds(180))
+                var anim = new DoubleAnimation(targetY, TimeSpan.FromMilliseconds(200))
                 {
-                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                 };
                 MenuBarSlideTransform.BeginAnimation(TranslateTransform.YProperty, anim);
             });
@@ -239,6 +334,41 @@ namespace MenubarDock.UI
 
             PathChargingBolt.Visibility = _batteryService.IsCharging
                 ? Visibility.Visible : Visibility.Collapsed;
+
+            BtnBattery.ToolTip = _batteryService.IsCharging
+                ? $"Battery: {_batteryService.Percent}% (Charging)"
+                : $"Battery: {_batteryService.Percent}%";
+        }
+
+        private void UpdateNetworkUI()
+        {
+            if (!_config.Settings.ShowWifiWidget)
+            {
+                BtnWifi.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            BtnWifi.Visibility = Visibility.Visible;
+
+            if (!_networkService.IsConnected)
+            {
+                PathWifi.Opacity = 0.35;
+                BtnWifi.ToolTip = "Network: Disconnected";
+            }
+            else
+            {
+                PathWifi.Opacity = 1.0;
+                BtnWifi.ToolTip = _networkService.IsWifi
+                    ? $"Wi-Fi: {_networkService.StatusText}"
+                    : $"Ethernet: {_networkService.StatusText}";
+            }
+        }
+
+        private void UpdateActiveAppMenu(string appName)
+        {
+            MenuAboutApp.Header = $"About {appName}";
+            MenuHideApp.Header = $"Hide {appName}  (Win+Down)";
+            MenuQuitApp.Header = $"Quit {appName}  (Alt+F4)";
         }
 
         // Generic dropdown opener for all menu buttons
@@ -253,6 +383,24 @@ namespace MenubarDock.UI
             }
         }
 
+        // Active App Menu Handlers
+        private void OnAboutActiveAppClick(object sender, RoutedEventArgs e)
+        {
+            string app = _appTracker.ActiveAppName;
+            if (app.Equals("Finder", StringComparison.OrdinalIgnoreCase))
+            {
+                SystemActions.OpenAboutThisPC();
+            }
+            else
+            {
+                System.Windows.MessageBox.Show($"{app}\n\nRunning on Windows 11 with MenubarDock.", $"About {app}", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        private void OnHideActiveAppClick(object sender, RoutedEventArgs e) => SystemActions.MinimizeWindow(_appTracker.LastActiveHwnd);
+        private void OnHideOthersClick(object sender, RoutedEventArgs e) => SystemActions.HideOthers(_appTracker.LastActiveHwnd);
+        private void OnShowAllClick(object sender, RoutedEventArgs e) => SystemActions.ShowAll();
+        private void OnQuitActiveAppClick(object sender, RoutedEventArgs e) => SystemActions.CloseActiveWindow(_appTracker.LastActiveHwnd);
+
         // Apple System Menu
         private void OnAboutThisPcClick(object sender, RoutedEventArgs e) => SystemActions.OpenAboutThisPC();
         private void OnSystemSettingsClick(object sender, RoutedEventArgs e) => SystemActions.OpenSystemSettings();
@@ -260,8 +408,8 @@ namespace MenubarDock.UI
         private void OnMenuBarSettingsClick(object sender, RoutedEventArgs e) => _openSettingsAction();
         private void OnLockScreenClick(object sender, RoutedEventArgs e) => SystemActions.LockComputer();
         private void OnSleepClick(object sender, RoutedEventArgs e) => SystemActions.SleepComputer();
-        private void OnRestartClick(object sender, RoutedEventArgs e) => SystemActions.RestartComputer();
-        private void OnShutdownClick(object sender, RoutedEventArgs e) => SystemActions.ShutdownComputer();
+        private void OnRestartClick(object sender, RoutedEventArgs e) => SystemActions.RestartComputerSafe();
+        private void OnShutdownClick(object sender, RoutedEventArgs e) => SystemActions.ShutdownComputerSafe();
 
         // File Menu
         private void OnNewExplorerClick(object sender, RoutedEventArgs e)
@@ -277,30 +425,41 @@ namespace MenubarDock.UI
         {
             try { Process.Start(new ProcessStartInfo { FileName = "notepad.exe", UseShellExecute = true }); } catch { }
         }
-        private void OnCloseActiveWindowClick(object sender, RoutedEventArgs e) => SystemActions.CloseActiveWindow();
+        private void OnCloseActiveWindowClick(object sender, RoutedEventArgs e) => SystemActions.CloseActiveWindow(_appTracker.LastActiveHwnd);
 
         // Edit Menu
-        private void OnUndoClick(object sender, RoutedEventArgs e) => SystemActions.TriggerUndo();
-        private void OnRedoClick(object sender, RoutedEventArgs e) => SystemActions.TriggerRedo();
-        private void OnCutClick(object sender, RoutedEventArgs e) => SystemActions.TriggerCut();
-        private void OnCopyClick(object sender, RoutedEventArgs e) => SystemActions.TriggerCopy();
-        private void OnPasteClick(object sender, RoutedEventArgs e) => SystemActions.TriggerPaste();
-        private void OnSelectAllClick(object sender, RoutedEventArgs e) => SystemActions.TriggerSelectAll();
+        private void OnUndoClick(object sender, RoutedEventArgs e) => SystemActions.TriggerUndo(_appTracker.LastActiveHwnd);
+        private void OnRedoClick(object sender, RoutedEventArgs e) => SystemActions.TriggerRedo(_appTracker.LastActiveHwnd);
+        private void OnCutClick(object sender, RoutedEventArgs e) => SystemActions.TriggerCut(_appTracker.LastActiveHwnd);
+        private void OnCopyClick(object sender, RoutedEventArgs e) => SystemActions.TriggerCopy(_appTracker.LastActiveHwnd);
+        private void OnPasteClick(object sender, RoutedEventArgs e) => SystemActions.TriggerPaste(_appTracker.LastActiveHwnd);
+        private void OnSelectAllClick(object sender, RoutedEventArgs e) => SystemActions.TriggerSelectAll(_appTracker.LastActiveHwnd);
         private void OnClipboardClick(object sender, RoutedEventArgs e) => SystemActions.OpenClipboard();
 
         // View Menu
-        private void OnFullscreenClick(object sender, RoutedEventArgs e) => SystemActions.TriggerFullscreen();
-        private void OnZoomInClick(object sender, RoutedEventArgs e) => SystemActions.TriggerZoomIn();
-        private void OnZoomOutClick(object sender, RoutedEventArgs e) => SystemActions.TriggerZoomOut();
-        private void OnZoomResetClick(object sender, RoutedEventArgs e) => SystemActions.TriggerZoomReset();
+        private void OnFullscreenClick(object sender, RoutedEventArgs e) => SystemActions.TriggerFullscreen(_appTracker.LastActiveHwnd);
+        private void OnZoomInClick(object sender, RoutedEventArgs e) => SystemActions.TriggerZoomIn(_appTracker.LastActiveHwnd);
+        private void OnZoomOutClick(object sender, RoutedEventArgs e) => SystemActions.TriggerZoomOut(_appTracker.LastActiveHwnd);
+        private void OnZoomResetClick(object sender, RoutedEventArgs e) => SystemActions.TriggerZoomReset(_appTracker.LastActiveHwnd);
         private void OnTaskViewClick(object sender, RoutedEventArgs e) => SystemActions.OpenTaskView();
         private void OnShowDesktopClick(object sender, RoutedEventArgs e) => SystemActions.ShowDesktop();
 
         // Window Menu
-        private void OnMinimizeClick(object sender, RoutedEventArgs e) => SystemActions.MinimizeWindow();
-        private void OnMaximizeClick(object sender, RoutedEventArgs e) => SystemActions.MaximizeWindow();
-        private void OnSnapLeftClick(object sender, RoutedEventArgs e) => SystemActions.SnapWindowLeft();
-        private void OnSnapRightClick(object sender, RoutedEventArgs e) => SystemActions.SnapWindowRight();
+        private void OnMinimizeClick(object sender, RoutedEventArgs e) => SystemActions.MinimizeWindow(_appTracker.LastActiveHwnd);
+        private void OnMaximizeClick(object sender, RoutedEventArgs e) => SystemActions.MaximizeWindow(_appTracker.LastActiveHwnd);
+        private void OnSnapLeftClick(object sender, RoutedEventArgs e) => SystemActions.SnapWindowLeft(_appTracker.LastActiveHwnd);
+        private void OnSnapRightClick(object sender, RoutedEventArgs e) => SystemActions.SnapWindowRight(_appTracker.LastActiveHwnd);
+
+        // Volume Handlers
+        private void OnVolumeMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (e.Delta > 0) SystemActions.VolumeUp();
+            else if (e.Delta < 0) SystemActions.VolumeDown();
+            e.Handled = true;
+        }
+        private void OnVolumeMuteClick(object sender, RoutedEventArgs e) => SystemActions.VolumeMute();
+        private void OnVolumeUpClick(object sender, RoutedEventArgs e) => SystemActions.VolumeUp();
+        private void OnVolumeDownClick(object sender, RoutedEventArgs e) => SystemActions.VolumeDown();
 
         // Widget-specific dropdowns (open ONLY their specific settings)
         private void OnBatterySettingsClick(object sender, RoutedEventArgs e) => SystemActions.OpenPowerBatterySettings();
@@ -318,5 +477,11 @@ namespace MenubarDock.UI
         private void OnSearchClick(object sender, RoutedEventArgs e) => SystemActions.OpenWindowsSearch();
         private void OnQuickSettingsClick(object sender, RoutedEventArgs e) => SystemActions.OpenQuickSettings();
         private void OnClockClick(object sender, RoutedEventArgs e) => SystemActions.OpenNotifications();
+
+        protected override void OnClosed(EventArgs e)
+        {
+            SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
+            base.OnClosed(e);
+        }
     }
 }

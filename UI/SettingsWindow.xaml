@@ -113,11 +113,21 @@
                 <TextBlock Text="Global Hotkey: Ctrl + Alt + M — toggle show/hide"
                            Foreground="#888888" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"/>
 
+                <!-- LEFT MENU -->
+                <TextBlock Text="Left Menu Items" FontSize="15" FontWeight="SemiBold"
+                           Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                <CheckBox x:Name="ChkAppleMenu" Content="Show Apple System Menu ()"
+                          Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
+                <CheckBox x:Name="ChkActiveApp" Content="Show Active Application Menu"
+                          Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
+
                 <Separator Background="#25FFFFFF" Margin="0,12"/>
 
                 <!-- CLOCK -->
                 <TextBlock Text="Clock and Date" FontSize="15" FontWeight="SemiBold"
                            Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                <CheckBox x:Name="ChkClockWidget" Content="Show Clock and Date Widget"
+                          Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
                 <CheckBox x:Name="ChkShowDate" Content="Show Date in Clock (e.g. Fri Sep 4)"
                           Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
                 <CheckBox x:Name="Chk24Hour" Content="Use 24-Hour Time Format"

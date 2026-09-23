@@ -7,8 +7,15 @@ namespace MenubarDock.Core
     public static class NativeMethods
     {
         public const int GWL_EXSTYLE = -20;
+        public const int GWL_STYLE = -16;
         public const int WS_EX_TOOLWINDOW = 0x00000080;
+        public const int WS_EX_APPWINDOW = 0x00040000;
         public const int WS_EX_NOACTIVATE = 0x08000000;
+        public const uint WS_VISIBLE = 0x10000000;
+        public const uint WS_CHILD = 0x40000000;
+        public const uint GW_OWNER = 4;
+        public const int DWMWA_CLOAKED = 14;
+
         public const int WM_HOTKEY = 0x0312;
         public const int MOD_ALT = 0x0001;
         public const int MOD_CONTROL = 0x0002;
@@ -16,9 +23,23 @@ namespace MenubarDock.Core
 
         public const uint KEYEVENTF_KEYUP = 0x0002;
         public const byte VK_LWIN = 0x5B;
+        public const byte VK_VOLUME_MUTE = 0xAD;
+        public const byte VK_VOLUME_DOWN = 0xAE;
+        public const byte VK_VOLUME_UP = 0xAF;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT { public int X; public int Y; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+            public int Width => Right - Left;
+            public int Height => Bottom - Top;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         public struct SYSTEM_POWER_STATUS
@@ -30,6 +51,29 @@ namespace MenubarDock.Core
             public int BatteryLifeTime;
             public int BatteryFullLifeTime;
         }
+
+        public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsIconic(IntPtr hWnd);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+        [DllImport("dwmapi.dll")]
+        public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
 
         [DllImport("kernel32.dll")]
         public static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS lpSystemPowerStatus);
@@ -66,6 +110,14 @@ namespace MenubarDock.Core
 
         [DllImport("user32.dll")]
         public static extern bool LockWorkStation();
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsWindow(IntPtr hWnd);
 
         [DllImport("Powrprof.dll", SetLastError = true)]
         public static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);

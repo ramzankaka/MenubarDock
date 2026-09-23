@@ -21,7 +21,7 @@
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Padding" Value="7,0"/>
-            <Setter Property="Height" Value="30"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -139,10 +139,22 @@
                         </Button.ContextMenu>
                     </Button>
 
-                    <!-- Active App Name -->
-                    <TextBlock x:Name="TxtActiveApp" Text="Finder" FontWeight="Bold"
-                               FontSize="13" Foreground="#FFFFFF" VerticalAlignment="Center"
-                               Margin="6,0,8,0"/>
+                    <!-- Active App Name Menu Button -->
+                    <Button x:Name="BtnActiveApp" Style="{StaticResource MenuBtnStyle}" Click="OnOpenMenuClick" Margin="4,0,2,0">
+                        <TextBlock x:Name="TxtActiveApp" Text="Finder" FontWeight="Bold"
+                                   FontSize="13" VerticalAlignment="Center"/>
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="ActiveAppContextMenu">
+                                <MenuItem x:Name="MenuAboutApp" Header="About Finder" Click="OnAboutActiveAppClick"/>
+                                <Separator/>
+                                <MenuItem x:Name="MenuHideApp" Header="Hide Finder  (Win+Down)" Click="OnHideActiveAppClick"/>
+                                <MenuItem x:Name="MenuHideOthers" Header="Hide Others  (Win+Home)" Click="OnHideOthersClick"/>
+                                <MenuItem x:Name="MenuShowAll" Header="Show All" Click="OnShowAllClick"/>
+                                <Separator/>
+                                <MenuItem x:Name="MenuQuitApp" Header="Quit Finder  (Alt+F4)" Click="OnQuitActiveAppClick"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
 
                     <!-- File -->
                     <Button x:Name="BtnFile" Style="{StaticResource MenuBtnStyle}" Content="File" Click="OnOpenMenuClick">
@@ -274,12 +286,17 @@
                     </Button>
 
                     <!-- Volume Widget -->
-                    <Button x:Name="BtnVolume" Style="{StaticResource MenuBtnStyle}" Click="OnOpenMenuClick" ToolTip="Sound and Volume">
+                    <Button x:Name="BtnVolume" Style="{StaticResource MenuBtnStyle}" Click="OnOpenMenuClick"
+                            PreviewMouseWheel="OnVolumeMouseWheel" ToolTip="Sound and Volume (Scroll to adjust)">
                         <Path x:Name="PathVolume"
                               Data="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z"
                               Fill="#FFFFFF" Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center"/>
                         <Button.ContextMenu>
                             <ContextMenu>
+                                <MenuItem Header="Mute / Unmute" Click="OnVolumeMuteClick"/>
+                                <MenuItem Header="Volume Up" Click="OnVolumeUpClick"/>
+                                <MenuItem Header="Volume Down" Click="OnVolumeDownClick"/>
+                                <Separator/>
                                 <MenuItem Header="Sound Settings..." Click="OnSoundSettingsClick"/>
                                 <MenuItem Header="Volume Mixer..." Click="OnVolumeMixerClick"/>
                                 <Separator/>

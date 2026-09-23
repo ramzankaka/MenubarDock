@@ -42,6 +42,10 @@ namespace MenubarDock.UI
             ChkStartup.IsChecked = StartupManager.IsStartupEnabled();
             ChkAutoHide.IsChecked = s.AutoHideWhenAppsOpen;
 
+            ChkAppleMenu.IsChecked = s.ShowAppleMenu;
+            ChkActiveApp.IsChecked = s.ShowActiveApp;
+
+            ChkClockWidget.IsChecked = s.ShowClockWidget;
             ChkShowDate.IsChecked = s.ClockShowDate;
             Chk24Hour.IsChecked = s.Clock24Hour;
             ChkShowSeconds.IsChecked = s.ClockShowSeconds;
@@ -80,6 +84,10 @@ namespace MenubarDock.UI
             StartupManager.SetStartup(ChkStartup.IsChecked ?? false);
             s.AutoHideWhenAppsOpen = ChkAutoHide.IsChecked ?? true;
 
+            s.ShowAppleMenu = ChkAppleMenu.IsChecked ?? true;
+            s.ShowActiveApp = ChkActiveApp.IsChecked ?? true;
+
+            s.ShowClockWidget = ChkClockWidget.IsChecked ?? true;
             s.ClockShowDate = ChkShowDate.IsChecked ?? true;
             s.Clock24Hour = Chk24Hour.IsChecked ?? false;
             s.ClockShowSeconds = ChkShowSeconds.IsChecked ?? false;
